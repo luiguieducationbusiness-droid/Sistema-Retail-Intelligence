@@ -253,7 +253,7 @@
 
         function checkAuth() {
             const session = localStorage.getItem('stockflow_session');
-            if (!session) window.location.href = 'Login.html';
+            if (!session) window.location.href = 'index.html';
         }
 
         // --- 3. RENDERIZADO DE TABLA ---
@@ -443,7 +443,7 @@
         function logout() {
             if(confirm('¿Cerrar sesión?')) {
                 localStorage.removeItem('stockflow_session');
-                window.location.href = 'Login.html';
+                window.location.href = 'index.html';
             }
         }
 

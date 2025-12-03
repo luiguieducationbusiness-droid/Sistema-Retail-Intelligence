@@ -283,7 +283,7 @@
             
             if (!sessionData) {
                 // Si no hay sesión, volver al login
-                window.location.href = 'Login.html';
+                window.location.href = 'index.html';
             } else {
                 // Si hay sesión, cargar datos del usuario
                 const user = JSON.parse(sessionData);
@@ -342,7 +342,7 @@
         function logout() {
             if(confirm('¿Estás seguro de cerrar sesión?')) {
                 localStorage.removeItem('stockflow_session');
-                window.location.href = 'Login.html';
+                window.location.href = 'index.html';
             }
         }
 

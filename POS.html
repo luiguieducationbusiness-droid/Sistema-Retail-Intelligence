@@ -256,7 +256,7 @@
 
         function checkAuth() {
             const session = localStorage.getItem('stockflow_session');
-            if (!session) window.location.href = 'Login.html';
+            if (!session) window.location.href = 'index.html';
             else document.getElementById('cashier-name').innerText = JSON.parse(session).email.split('@')[0];
         }
 
@@ -445,7 +445,7 @@
         }
 
         function logout() {
-            if(confirm('¿Cerrar caja?')) { localStorage.removeItem('stockflow_session'); window.location.href = 'Login.html'; }
+            if(confirm('¿Cerrar caja?')) { localStorage.removeItem('stockflow_session'); window.location.href = 'index.html'; }
         }
 
         // --- UTILIDADES ---

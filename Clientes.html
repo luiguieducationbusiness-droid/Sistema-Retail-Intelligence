@@ -373,7 +373,7 @@
         });
 
         function checkAuth() {
-            if (!localStorage.getItem('stockflow_session')) window.location.href = 'Login.html';
+            if (!localStorage.getItem('stockflow_session')) window.location.href = 'index.html';
         }
 
         // --- 3. RENDERIZADO DE LISTA ---
@@ -576,7 +576,7 @@
         function logout() {
             if(confirm('¿Cerrar sesión?')) {
                 localStorage.removeItem('stockflow_session');
-                window.location.href = 'Login.html';
+                window.location.href = 'index.html';
             }
         }
     </script>
