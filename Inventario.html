@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Gestión de Inventario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        bgLight: '#F3F4F6',
+                        danger: '#EF4444',
+                        success: '#10B981',
+                        warning: '#F59E0B'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-enter { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-bgLight h-screen overflow-hidden flex text-gray-800">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 z-20 shadow-lg flex-shrink-0">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold mb-8 shadow-md">S</div>
+        
+        <nav class="flex-1 space-y-4 w-full flex flex-col items-center">
+            <a href="Dashboard.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Dashboard">
+                <i class="fas fa-chart-pie text-xl"></i>
+            </a>
+            <a href="POS.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="POS">
+                <i class="fas fa-cash-register text-xl"></i>
+            </a>
+            <a href="Inventario.html" class="text-primary bg-blue-50 p-3 rounded-xl transition shadow-inner relative group" title="Inventario">
+                <i class="fas fa-boxes text-xl"></i>
+                <span class="absolute right-2 top-2 w-2 h-2 bg-success rounded-full ring-2 ring-white animate-pulse"></span>
+            </a>
+            <a href="Clientes.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Clientes">
+                <i class="fas fa-users text-xl"></i>
+            </a>
+            <a href="Marketing.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Marketing">
+                <i class="fas fa-bullhorn text-x1"></i>
+            </a>
+        </nav>
+
+        <button onclick="logout()" class="text-gray-400 hover:text-danger mt-auto p-3 rounded-xl hover:bg-red-50 transition">
+            <i class="fas fa-power-off text-xl"></i>
+        </button>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+        
+        <!-- Header Estadísticas -->
+        <header class="bg-white p-6 border-b border-gray-200 flex justify-between items-center z-10 shadow-sm">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Gestión de Inventario</h1>
+                <p class="text-sm text-gray-500 mt-1">
+                    Productos listados: <span class="font-bold text-primary" id="total-count">0</span> | 
+                    Valor Inventario: <span class="font-bold text-success" id="total-value">S/ 0.00</span>
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="exportToCSV()" class="bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 hover:text-green-600 hover:border-green-200 transition flex items-center gap-2">
+                    <i class="fas fa-file-excel"></i> Exportar
+                </button>
+                <button onclick="openModal()" class="bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-secondary shadow-lg shadow-blue-200 flex items-center gap-2 transition transform active:scale-95">
+                    <i class="fas fa-plus"></i> Nuevo Producto
+                </button>
+            </div>
+        </header>
+
+        <!-- Filtros y Tabla -->
+        <div class="flex-1 overflow-y-auto p-6 bg-bgLight">
+            
+            <!-- Barra de Filtros -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm mb-6 flex flex-wrap gap-4 items-center justify-between border border-gray-100">
+                <div class="relative w-full md:w-96 group">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition"></i>
+                    <input type="text" id="searchInput" onkeyup="renderTable()" placeholder="Buscar por nombre, SKU..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-white transition-all">
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <select id="categoryFilter" onchange="renderTable()" class="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 cursor-pointer hover:bg-white transition">
+                        <option value="all">Todas las Categorías</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Carnes">Carnes</option>
+                        <option value="Cuidado Personal">Cuidado Personal</option>
+                        <option value="Electrónicos">Electrónicos</option>
+                        <option value="Frutas">Frutas</option>
+                        <option value="Lácteos">Lácteos</option>
+                        <option value="Ropa">Ropa</option>
+                        <option value="Snacks">Snacks</option>
+                        <option value="Verduras">Verduras</option>
+                    </select>
+                    <select id="statusFilter" onchange="renderTable()" class="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-primary focus:border-primary block p-2.5 cursor-pointer hover:bg-white transition">
+                        <option value="all">Estado: Todos</option>
+                        <option value="ok">Disponible</option>
+                        <option value="low">Stock Bajo</option>
+                        <option value="out">Agotado</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-slide-up">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th scope="col" class="px-6 py-4">Producto</th>
+                                <th scope="col" class="px-6 py-4">Categoría</th>
+                                <th scope="col" class="px-6 py-4">Precio (Costo / Venta)</th>
+                                <th scope="col" class="px-6 py-4 text-center">Stock</th>
+                                <th scope="col" class="px-6 py-4 text-center">Estado</th>
+                                <th scope="col" class="px-6 py-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-body">
+                            <!-- JS RENDERIZARÁ AQUÍ -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginación Simple -->
+                <div class="p-4 bg-white border-t border-gray-200 flex justify-between items-center">
+                    <span class="text-sm text-gray-500" id="showing-text">Mostrando resultados...</span>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 text-sm disabled:opacity-50" disabled>Anterior</button>
+                        <button class="px-3 py-1.5 bg-primary text-white rounded-lg text-sm shadow">1</button>
+                        <button class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 text-sm">Siguiente</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL: AGREGAR / EDITAR PRODUCTO -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg animate-slide-up">
+                
+                <!-- Header Modal -->
+                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold leading-6 text-gray-900" id="modal-title">Nuevo Producto</h3>
+                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulario -->
+                <form id="productForm" onsubmit="saveProduct(event)" class="p-6 space-y-4">
+                    <input type="hidden" id="prodId">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
+                            <input type="text" id="prodName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SKU (Código)</label>
+                            <input type="text" id="prodSku" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                            <select id="prodCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none bg-white">
+                                <option value="Bebidas">Bebidas</option>
+                                <option value="Carnes">Carnes</option>
+                                <option value="Cuidado Personal">Cuidado Personal</option>
+                                <option value="Electrónicos">Electrónicos</option>
+                                <option value="Frutas">Frutas</option>
+                                <option value="Lácteos">Lácteos</option>
+                                <option value="Ropa">Ropa</option>
+                                <option value="Snacks">Snacks</option>
+                                <option value="Verduras">Verduras</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Costo (S/)</label>
+                            <input type="number" step="0.01" id="prodCost" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Precio Venta (S/)</label>
+                            <input type="number" step="0.01" id="prodPrice" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock Actual</label>
+                            <input type="number" id="prodStock" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary outline-none">
+                        </div>
+                        
+                        <div class="flex items-end">
+                            <div class="bg-yellow-50 text-yellow-800 text-xs p-2 rounded w-full border border-yellow-100">
+                                <i class="fas fa-lightbulb mr-1"></i> Stock bajo < 10 u.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex flex-row-reverse gap-3">
+                        <button type="submit" class="inline-flex w-full justify-center rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white shadow-sm hover:bg-secondary sm:w-auto transition">Guardar</button>
+                        <button type="button" onclick="closeModal()" class="inline-flex w-full justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGICA JAVASCRIPT COMPLETA -->
+    <script>
+        // --- 1. DATOS INICIALES (MOCK DATABASE) ---
+        let inventory = [
+            { id: 1, name: "Coca Cola 600ml", sku: "7899912", category: "Bebidas", cost: 2.10, price: 3.50, stock: 150, icon: "fa-wine-bottle" },
+            { id: 2, name: "Gorra Nike Negra", sku: "4421002", category: "Ropa", cost: 30.00, price: 60.00, stock: 5, icon: "fa-tshirt" },
+            { id: 3, name: "Bloqueador Solar", sku: "112233", category: "Cuidado Personal", cost: 15.00, price: 45.00, stock: 80, icon: "fa-sun" },
+            { id: 4, name: "Leche Gloria Tarro", sku: "GLO001", category: "Lácteos", cost: 3.20, price: 4.50, stock: 200, icon: "fa-wine-glass" },
+            { id: 5, name: "Audífonos Sony", sku: "SNY-X1", category: "Electrónicos", cost: 40.00, price: 89.90, stock: 0, icon: "fa-headphones" },
+            { id: 6, name: "Papas Lays", sku: "LAY005", category: "Snacks", cost: 3.50, price: 5.50, stock: 45, icon: "fa-cookie-bite" },
+        ];
+
+        // --- 2. INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            renderTable();
+        });
+
+        function checkAuth() {
+            const session = localStorage.getItem('stockflow_session');
+            if (!session) window.location.href = 'Login.html';
+        }
+
+        // --- 3. RENDERIZADO DE TABLA ---
+        function renderTable() {
+            const tbody = document.getElementById('inventory-body');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const catFilter = document.getElementById('categoryFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            tbody.innerHTML = '';
+
+            // Filtrado
+            let filteredData = inventory.filter(item => {
+                const matchText = item.name.toLowerCase().includes(search) || item.sku.toLowerCase().includes(search);
+                const matchCat = catFilter === 'all' || item.category === catFilter;
+                
+                let matchStatus = true;
+                if (statusFilter === 'low') matchStatus = item.stock > 0 && item.stock <= 10;
+                else if (statusFilter === 'out') matchStatus = item.stock === 0;
+                else if (statusFilter === 'ok') matchStatus = item.stock > 10;
+
+                return matchText && matchCat && matchStatus;
+            });
+
+            // Actualizar Estadísticas Header
+            updateStats(filteredData);
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400">No se encontraron productos</td></tr>`;
+                return;
+            }
+
+            // Generar Filas
+            filteredData.forEach(item => {
+                const status = getStatus(item.stock);
+                const icon = getCategoryIcon(item.category);
+                
+                const tr = document.createElement('tr');
+                tr.className = "bg-white border-b hover:bg-gray-50 transition";
+                if(item.stock === 0) tr.classList.add('bg-red-50/20'); // Highlight agotados
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
+                        <div class="w-10 h-10 ${status.bgIcon} rounded-lg flex items-center justify-center ${status.textIcon}">
+                            <i class="fas ${item.icon || icon}"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold">${item.name}</div>
+                            <div class="text-xs text-gray-400">SKU: ${item.sku}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs font-medium">${item.category}</span></td>
+                    <td class="px-6 py-4">
+                        <span class="text-gray-400 text-xs">C: S/ ${item.cost.toFixed(2)}</span> <br>
+                        <span class="text-primary font-bold">V: S/ ${item.price.toFixed(2)}</span>
+                    </td>
+                    <td class="px-6 py-4 text-center font-bold text-gray-700">${item.stock}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="${status.badgeClass} text-xs font-medium px-2.5 py-0.5 rounded-full ${item.stock <= 10 ? 'animate-pulse' : ''}">${status.label}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="editProduct(${item.id})" class="text-gray-400 hover:text-primary transition mx-2" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteProduct(${item.id})" class="text-gray-400 hover:text-danger transition mx-2" title="Eliminar">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('showing-text').innerText = `Mostrando ${filteredData.length} de ${inventory.length} productos`;
+        }
+
+        // --- 4. LÓGICA DE NEGOCIO Y ESTADOS ---
+        function getStatus(stock) {
+            if (stock === 0) return { label: 'Agotado', badgeClass: 'bg-red-100 text-red-800', bgIcon: 'bg-red-50', textIcon: 'text-red-500' };
+            if (stock <= 10) return { label: 'Crítico', badgeClass: 'bg-yellow-100 text-yellow-800', bgIcon: 'bg-yellow-50', textIcon: 'text-yellow-600' };
+            return { label: 'Disponible', badgeClass: 'bg-green-100 text-green-800', bgIcon: 'bg-indigo-50', textIcon: 'text-primary' };
+        }
+
+        function getCategoryIcon(category) {
+            const icons = { 'Bebidas': 'fa-wine-bottle', 'Ropa': 'fa-tshirt', 'Snacks': 'fa-cookie-bite', 'Electrónicos': 'fa-plug', 'Lácteos': 'fa-cow' };
+            return icons[category] || 'fa-box';
+        }
+
+        function updateStats(data) {
+            const count = data.length;
+            const value = data.reduce((acc, item) => acc + (item.price * item.stock), 0);
+            
+            document.getElementById('total-count').innerText = count;
+            document.getElementById('total-value').innerText = `S/ ${value.toLocaleString('es-PE', {minimumFractionDigits: 2})}`;
+        }
+
+        // --- 5. MODAL Y CRUD ---
+        function openModal(isEdit = false) {
+            const modal = document.getElementById('productModal');
+            document.getElementById('modal-title').innerText = isEdit ? 'Editar Producto' : 'Nuevo Producto';
+            
+            if (!isEdit) {
+                // Resetear form para nuevo
+                document.getElementById('productForm').reset();
+                document.getElementById('prodId').value = '';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            
+            const id = document.getElementById('prodId').value;
+            const newProd = {
+                id: id ? parseInt(id) : Date.now(), // ID temporal
+                name: document.getElementById('prodName').value,
+                sku: document.getElementById('prodSku').value,
+                category: document.getElementById('prodCategory').value,
+                cost: parseFloat(document.getElementById('prodCost').value),
+                price: parseFloat(document.getElementById('prodPrice').value),
+                stock: parseInt(document.getElementById('prodStock').value),
+                icon: getCategoryIcon(document.getElementById('prodCategory').value)
+            };
+
+            if (id) {
+                // Editar existente
+                const index = inventory.findIndex(p => p.id == id);
+                inventory[index] = newProd;
+                showToast("Producto actualizado correctamente");
+            } else {
+                // Crear nuevo
+                inventory.push(newProd);
+                showToast("Producto creado exitosamente");
+            }
+
+            closeModal();
+            renderTable();
+        }
+
+        function editProduct(id) {
+            const item = inventory.find(p => p.id === id);
+            if (!item) return;
+
+            document.getElementById('prodId').value = item.id;
+            document.getElementById('prodName').value = item.name;
+            document.getElementById('prodSku').value = item.sku;
+            document.getElementById('prodCategory').value = item.category;
+            document.getElementById('prodCost').value = item.cost;
+            document.getElementById('prodPrice').value = item.price;
+            document.getElementById('prodStock').value = item.stock;
+
+            openModal(true);
+        }
+
+        function deleteProduct(id) {
+            if (confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')) {
+                inventory = inventory.filter(p => p.id !== id);
+                renderTable();
+                showToast("Producto eliminado", "error");
+            }
+        }
+
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,Nombre,SKU,Categoria,Costo,Precio,Stock\n";
+            
+            inventory.forEach(row => {
+                csvContent += `${row.id},${row.name},${row.sku},${row.category},${row.cost},${row.price},${row.stock}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "inventario_stockflow.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast("Reporte descargado");
+        }
+
+        // --- 6. UTILIDADES ---
+        function logout() {
+            if(confirm('¿Cerrar sesión?')) {
+                localStorage.removeItem('stockflow_session');
+                window.location.href = 'Login.html';
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 'fa-check' : 'fa-trash';
+            
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-x-full mb-2 z-50`;
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span class="font-medium text-sm">${message}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Acceso Administrativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',   /* Azul Corporativo */
+                        secondary: '#1e40af',
+                        danger: '#ef4444',
+                        success: '#10b981'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.6s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; }
+        /* Ocultar scrollbar pero permitir scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-screen w-full flex overflow-hidden bg-white">
+
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 lg:p-12 animate-fade-in relative z-10 bg-white">
+        <div class="w-full max-w-md space-y-6">
+            
+            <div class="text-center lg:text-left">
+                <div class="inline-flex items-center gap-2 mb-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-200">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <span class="text-2xl font-bold text-gray-800 tracking-tight">StockFlow</span>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">Bienvenido de nuevo</h2>
+                <p class="text-gray-500 mt-2 text-sm">Gestiona tu retail inteligente con eficiencia.</p>
+            </div>
+
+            <form id="loginForm" class="mt-8 space-y-5" onsubmit="handleLogin(event)">
+                
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo Corporativo</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-envelope text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                        </div>
+                        <input id="email" name="email" type="email" required 
+                            class="pl-10 block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all" 
+                            placeholder="admin@stockflow.com" value="admin@stockflow.com">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="password" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                        <button type="button" onclick="toggleModal('forgotPasswordModal')" class="text-sm font-medium text-primary hover:text-secondary focus:outline-none">
+                            ¿Olvidaste tu contraseña?
+                        </button>
+                    </div>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-lock text-gray-400 group-focus-within:text-primary transition-colors"></i>
+                        </div>
+                        <input id="password" name="password" type="password" required 
+                            class="pl-10 pr-10 block w-full px-3 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent sm:text-sm transition-all" 
+                            placeholder="••••••••">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onclick="togglePassword()">
+                            <i class="fas fa-eye text-gray-400 hover:text-gray-600 transition-colors" id="eyeIcon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded cursor-pointer">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-900 cursor-pointer">Recordar sesión</label>
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-blue-200 text-sm font-bold text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all transform hover:-translate-y-0.5 active:scale-95">
+                    <span id="btnText">Iniciar Sesión</span>
+                    <i id="btnIcon" class="fas fa-arrow-right ml-2 mt-1"></i>
+                    <svg id="btnSpinner" class="hidden animate-spin ml-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="mt-6 text-center border-t border-gray-100 pt-6">
+                <p class="text-xs text-gray-400">
+                    &copy; 2025 StockFlow Inc. <br>
+                    Sistema optimizado para Chrome v11.2
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="hidden lg:flex w-1/2 bg-gray-900 relative items-center justify-center overflow-hidden">
+        <img src="https://tecseris.com/wp-content/uploads/2023/09/Que-tipos-de-retail-existen.webp" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="Analytics Background">
+        
+        <div class="absolute inset-0 bg-gradient-to-tr from-indigo-900 via-primary/80 to-purple-900 opacity-90"></div>
+
+        <div class="relative z-10 p-12 text-white max-w-lg text-center">
+            <div class="mb-6 inline-block p-4 bg-white/10 rounded-full backdrop-blur-sm">
+                <i class="fas fa-rocket text-4xl text-yellow-400"></i>
+            </div>
+            <h2 class="text-4xl font-bold mb-6 leading-tight">Toma el control total de tu inventario y ventas.</h2>
+            <p class="text-indigo-100 text-lg mb-8">
+                "StockFlow transformó la manera en que gestionamos nuestras 3 sucursales. La automatización de marketing es simplemente brillante."
+            </p>
+            
+            <div class="flex items-center justify-center gap-4">
+                <div class="flex -space-x-2">
+                    <img class="w-10 h-10 rounded-full border-2 border-indigo-900" src="https://ui-avatars.com/api/?name=Alex+M&background=random" alt="">
+                    <img class="w-10 h-10 rounded-full border-2 border-indigo-900" src="https://ui-avatars.com/api/?name=Sara+L&background=random" alt="">
+                    <img class="w-10 h-10 rounded-full border-2 border-indigo-900" src="https://ui-avatars.com/api/?name=Jhon+D&background=random" alt="">
+                </div>
+                <div class="text-left">
+                    <p class="font-bold text-sm">Más de 500+ negocios</p>
+                    <div class="flex text-yellow-400 text-xs">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+    </div>
+
+    <div id="forgotPasswordModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity backdrop-blur-sm" onclick="toggleModal('forgotPasswordModal')"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                        <i class="fas fa-key text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Recuperar Acceso</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña.</p>
+                    </div>
+                    <div class="mt-4">
+                        <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none" placeholder="tucorreo@empresa.com">
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                    <button type="button" onclick="recoverPassword()" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-secondary focus:outline-none sm:col-start-2 sm:text-sm">
+                        Enviar Enlace
+                    </button>
+                    <button type="button" onclick="toggleModal('forgotPasswordModal')" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:col-start-1 sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN Y CREDENCIALES MOCK ---
+        // En un sistema real, esto va al backend. Aquí simulamos la BD.
+        const MOCK_DB = {
+            user: "admin@stockflow.com",
+            pass: "admin123" // Contraseña correcta para probar el éxito
+        };
+
+        // --- 2. FUNCIONES DE UI (INTERFAZ) ---
+        
+        // Ver/Ocultar contraseña
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            const isPassword = passwordInput.type === 'password';
+            
+            passwordInput.type = isPassword ? 'text' : 'password';
+            icon.className = isPassword ? 'fas fa-eye-slash text-primary' : 'fas fa-eye text-gray-400 hover:text-gray-600';
+        }
+
+        // Abrir/Cerrar Modales
+        function toggleModal(modalID) {
+            const modal = document.getElementById(modalID);
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.querySelector('div > div').classList.add('animate-fade-in'); // Animación simple
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Sistema de Notificaciones (Toasts)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            // Colores según tipo
+            const bgClass = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const iconClass = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `${bgClass} text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-300 translate-x-full mb-2`;
+            toast.innerHTML = `
+                <i class="fas ${iconClass} text-lg"></i>
+                <span class="font-medium text-sm">${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animar entrada
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full');
+            });
+
+            // Auto eliminar
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 3. LÓGICA DE NEGOCIO (LOGIN) ---
+
+        function handleLogin(event) {
+            event.preventDefault(); // Prevenir recarga
+
+            const emailInput = document.getElementById('email');
+            const passInput = document.getElementById('password');
+            const btn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            // 1. Validaciones básicas
+            if(!emailInput.value || !passInput.value) {
+                showToast("Por favor completa todos los campos", "error");
+                return;
+            }
+
+            // 2. Estado de Carga (Loading UI)
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            btnText.innerText = "Verificando...";
+            btnIcon.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+
+            // 3. Simulación de Petición al Servidor (Async)
+            setTimeout(() => {
+                // Verificar credenciales
+                if(emailInput.value === MOCK_DB.user && passInput.value === MOCK_DB.pass) {
+                    // ÉXITO
+                    showToast("Credenciales correctas. Redirigiendo...", "success");
+                    
+                    // Guardar sesión ficticia
+                    localStorage.setItem('stockflow_session', JSON.stringify({
+                        user: 'Administrador',
+                        email: emailInput.value,
+                        role: 'admin',
+                        loginTime: new Date().toISOString()
+                    }));
+
+                    // Redirección
+                    setTimeout(() => {
+                        window.location.href = "Dashboard.html"; 
+                    }, 1000);
+
+                } else {
+                    // ERROR
+                    showToast("Usuario o contraseña incorrectos", "error");
+                    
+                    // Resetear botón
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    btnText.innerText = "Iniciar Sesión";
+                    btnIcon.classList.remove('hidden');
+                    btnSpinner.classList.add('hidden');
+                    
+                    // Feedback en inputs
+                    passInput.value = "";
+                    passInput.focus();
+                    passInput.classList.add('ring-2', 'ring-red-500', 'bg-red-50');
+                    setTimeout(() => passInput.classList.remove('ring-2', 'ring-red-500', 'bg-red-50'), 2000);
+                }
+            }, 1500); // 1.5 segundos de simulación de delay
+        }
+
+        function recoverPassword() {
+            toggleModal('forgotPasswordModal');
+            showToast("Se ha enviado un correo de recuperación", "success");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Punto de Venta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        bgLight: '#F3F4F6',
+                        danger: '#EF4444',
+                        success: '#10B981'
+                    },
+                    animation: {
+                        'bounce-short': 'bounceShort 0.3s ease-in-out 1'
+                    },
+                    keyframes: {
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Efecto al hacer click en producto */
+        .product-card:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex text-gray-800">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2"></div>
+
+    <!-- SIDEBAR NAVEGACIÓN (Izquierda) -->
+    <aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 z-20 shadow-lg">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold mb-8 shadow-md">S</div>
+        <nav class="flex-1 space-y-4 w-full flex flex-col items-center">
+            <a href="Dashboard.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all"><i class="fas fa-chart-pie text-xl"></i></a>
+            <a href="POS.html" class="text-primary bg-blue-50 p-3 rounded-xl transition shadow-inner relative group"><i class="fas fa-cash-register text-xl"></i><span class="absolute right-2 top-2 w-2 h-2 bg-success rounded-full ring-2 ring-white animate-pulse"></span></a>
+            <a href="Inventario.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all"><i class="fas fa-boxes text-xl"></i></a>
+            <a href="Clientes.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all"><i class="fas fa-users text-xl"></i></a>
+            <a href="Marketing.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all"><i class="fas fa-bullhorn text-xl"></i></a>
+        </nav>
+        <button onclick="logout()" class="text-gray-400 hover:text-danger mt-auto p-3 rounded-xl hover:bg-red-50 transition"><i class="fas fa-power-off text-xl"></i></button>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full min-w-0 bg-bgLight">
+        <header class="bg-white p-4 border-b border-gray-200 shadow-sm z-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                <div class="relative flex-1 w-full md:max-w-xl">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Escanear código o buscar producto..." class="w-full pl-11 pr-24 py-3 bg-gray-100 border-transparent focus:bg-white border-2 focus:border-primary rounded-xl focus:outline-none transition-all font-medium" autofocus>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 px-2 py-1 rounded text-xs text-gray-500 font-mono shadow-sm hidden sm:block">F1 SCAN</div>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                    <div class="hidden md:flex flex-col text-right">
+                        <span class="text-xs text-gray-400">Cajero</span>
+                        <span class="text-sm font-bold text-gray-800" id="cashier-name">Admin</span>
+                    </div>
+                    <span class="text-sm font-bold text-success flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100"><i class="fas fa-wifi text-xs"></i> Online</span>
+                </div>
+            </div>
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="category-container">
+                <button onclick="filterCategory('all')" class="category-btn active px-5 py-2 bg-primary text-white rounded-full text-sm font-bold shadow-md whitespace-nowrap transition-all">Todos</button>
+                <button onclick="filterCategory('Bebidas')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">Bebidas</button>
+                <button onclick="filterCategory('Snacks')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">Snacks</button>
+                <button onclick="filterCategory('Lácteos')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">Lácteos</button>
+                <button onclick="filterCategory('Ropa')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">Ropa</button>
+            </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-6" id="products-grid">
+            </div>
+    </main>
+
+    <aside class="w-96 bg-white border-l border-gray-200 flex flex-col shadow-2xl z-30 relative h-full">
+        
+        <div class="p-5 border-b border-gray-100 bg-gray-50">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-lg text-gray-800">Venta Actual</h2>
+                <button onclick="openCustomerModal()" class="text-primary text-sm font-bold hover:text-secondary flex items-center gap-1">
+                    <i class="fas fa-user-plus"></i> Cliente
+                </button>
+            </div>
+            
+            <div onclick="openCustomerModal()" class="relative group cursor-pointer bg-white border border-gray-200 p-3 rounded-xl hover:border-primary hover:shadow-sm transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-primary flex items-center justify-center font-bold text-lg" id="client-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500">Cliente asignado</p>
+                        <p class="text-sm font-bold text-gray-800" id="client-name">Público General</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
+            <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                <i class="fas fa-shopping-basket text-6xl mb-4"></i>
+                <p>El carrito está vacío</p>
+            </div>
+        </div>
+
+        <div class="bg-white border-t border-gray-200 p-5 shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+            
+            <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-gray-500 text-sm">
+                    <span>Subtotal</span>
+                    <span id="summary-subtotal">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-500 text-sm hidden" id="discount-row">
+                    <span class="text-green-600">Descuento Aplicado</span>
+                    <span class="text-green-600" id="summary-discount">- S/ 0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-500 text-sm">
+                    <span>IGV (18%)</span>
+                    <span id="summary-tax">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t border-dashed border-gray-200 mt-2">
+                    <span class="font-bold text-xl text-gray-800">Total</span>
+                    <span class="font-bold text-3xl text-primary" id="summary-total">S/ 0.00</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 mb-4">
+                <button onclick="openDiscountModal('descuento')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
+                    <i class="fas fa-tag"></i> Descuento
+                </button>
+            </div>
+            <!-- Métodos de Pago -->
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <button onclick="selectPayment('efectivo')" id="pay-efectivo" class="payment-btn border-2 border-primary bg-blue-50 text-primary rounded-xl py-2 text-sm font-bold transition flex flex-col items-center gap-1">
+                    <i class="fas fa-money-bill"></i> Efectivo
+                </button>
+                <button onclick="selectPayment('tarjeta')" id="pay-tarjeta" class="payment-btn border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                    <i class="fas fa-credit-card"></i> Tarjeta
+                </button>
+                <button onclick="selectPayment('yape')" id="pay-yape" class="payment-btn border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-600 hover:border-purple-500 hover:text-purple-600 transition flex flex-col items-center gap-1">
+                    <i class="fas fa-qrcode"></i> QR
+                </button>
+            </div>
+
+            <button onclick="processCheckout()" id="checkout-btn" class="w-full bg-gray-400 cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 flex justify-between px-6 items-center" disabled>
+                <span class="text-lg">COBRAR</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </aside>
+
+    <div id="customerModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800">Seleccionar Cliente</h3>
+                <button onclick="closeModal('customerModal')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 max-h-80 overflow-y-auto">
+                <div onclick="setCustomer('Público General')" class="p-3 hover:bg-gray-50 rounded-xl cursor-pointer flex items-center gap-3 border-b border-gray-50">
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500"><i class="fas fa-users"></i></div>
+                    <p class="font-bold text-gray-700">Público General</p>
+                </div>
+                <div onclick="setCustomer('María Pérez')" class="p-3 hover:bg-gray-50 rounded-xl cursor-pointer flex items-center gap-3 border-b border-gray-50">
+                    <img src="https://ui-avatars.com/api/?name=Maria+Perez&background=c7d2fe&color=3730a3" class="w-10 h-10 rounded-full">
+                    <div><p class="font-bold text-gray-700">María Pérez</p><p class="text-xs text-gray-500">VIP • 999888777</p></div>
+                </div>
+                <div onclick="setCustomer('Carlos Ruiz')" class="p-3 hover:bg-gray-50 rounded-xl cursor-pointer flex items-center gap-3">
+                    <img src="https://ui-avatars.com/api/?name=Carlos+Ruiz&background=random" class="w-10 h-10 rounded-full">
+                    <div><p class="font-bold text-gray-700">Carlos Ruiz</p><p class="text-xs text-gray-500">Nuevo • 987654321</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="discountModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
+            <h3 class="font-bold text-gray-800 mb-4">Aplicar Descuento</h3>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button onclick="applyDiscount(5)" class="p-3 border rounded-xl hover:bg-blue-50 hover:border-primary font-bold text-gray-600">5%</button>
+                <button onclick="applyDiscount(10)" class="p-3 border rounded-xl hover:bg-blue-50 hover:border-primary font-bold text-gray-600">10%</button>
+                <button onclick="applyDiscount(20)" class="p-3 border rounded-xl hover:bg-blue-50 hover:border-primary font-bold text-gray-600">20%</button>
+                <button onclick="applyDiscount(0)" class="p-3 border rounded-xl hover:bg-red-50 hover:border-danger font-bold text-danger">Borrar</button>
+            </div>
+            <button onclick="closeModal('discountModal')" class="w-full bg-gray-100 text-gray-600 py-2 rounded-lg font-medium">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="success-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300" id="modal-content">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-4xl text-success"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Venta Exitosa!</h2>
+            <p class="text-gray-500 mb-6">El ticket ha sido procesado.</p>
+            <div class="bg-gray-50 p-4 rounded-xl mb-6 text-left border border-gray-100">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-500 text-sm">Total Pagado:</span>
+                    <span class="font-bold text-gray-800" id="modal-total">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 text-sm">Método:</span>
+                    <span class="font-bold text-primary uppercase" id="modal-method">Efectivo</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="resetPOS()" class="w-full bg-primary text-white font-bold py-2 rounded-xl">Nueva Venta</button>
+                <button class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATOS & ESTADO ---
+        const productsDB = [
+            { id: 1, name: "Coca Cola 600ml", price: 3.50, category: "Bebidas", icon: "fa-wine-bottle", color: "text-red-500" },
+            { id: 2, name: "Inca Kola 600ml", price: 3.50, category: "Bebidas", icon: "fa-wine-bottle", color: "text-yellow-500" },
+            { id: 3, name: "Agua San Mateo", price: 2.00, category: "Bebidas", icon: "fa-tint", color: "text-blue-400" },
+            { id: 4, name: "Galletas Oreo", price: 2.00, category: "Snacks", icon: "fa-cookie-bite", color: "text-gray-800" },
+            { id: 5, name: "Papas Lays", price: 4.50, category: "Snacks", icon: "fa-cookie", color: "text-yellow-600" },
+            { id: 6, name: "Yogurt Gloria", price: 5.20, category: "Lácteos", icon: "fa-wine-glass", color: "text-pink-500" },
+            { id: 7, name: "Leche Gloria Tarro", price: 4.00, category: "Lácteos", icon: "fa-glass-whiskey", color: "text-blue-700" },
+            { id: 8, name: "Gorra Nike (Promo)", price: 48.00, oldPrice: 60.00, category: "Ropa", icon: "fa-tshirt", color: "text-gray-700", promo: true },
+            { id: 9, name: "Pan Bimbo Blanco", price: 8.90, category: "Snacks", icon: "fa-bread-slice", color: "text-yellow-600" },
+        ];
+
+        let cart = [];
+        let currentDiscount = 0;
+        let currentFilter = 'all';
+        let paymentMethod = 'efectivo';
+
+        // --- INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            renderProducts();
+            updateCartUI();
+            document.addEventListener('keydown', (e) => { if (e.key === 'F1') { e.preventDefault(); document.getElementById('searchInput').focus(); } });
+        });
+
+        function checkAuth() {
+            const session = localStorage.getItem('stockflow_session');
+            if (!session) window.location.href = 'Login.html';
+            else document.getElementById('cashier-name').innerText = JSON.parse(session).email.split('@')[0];
+        }
+
+        // --- PRODUCTOS ---
+        function renderProducts(filter = 'all', query = '') {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            grid.className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
+
+            let filtered = productsDB.filter(p => 
+                (filter === 'all' || p.category === filter) && 
+                p.name.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (filtered.length === 0) {
+                grid.className = "flex flex-col items-center justify-center h-full text-gray-400";
+                grid.innerHTML = `<i class="fas fa-search text-4xl mb-2"></i><p>No se encontraron productos</p>`;
+                return;
+            }
+
+            filtered.forEach(product => {
+                const card = document.createElement('div');
+                card.className = `product-card bg-white p-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer border-2 border-transparent hover:border-primary transition group relative overflow-hidden select-none`;
+                card.onclick = () => addToCart(product.id);
+                card.innerHTML = `
+                    <div class="h-24 bg-gray-50 rounded-lg mb-3 flex items-center justify-center group-hover:bg-blue-50 transition">
+                        <i class="fas ${product.icon} text-3xl ${product.color} group-hover:scale-110 transition duration-300"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 truncate">${product.name}</h3>
+                    <p class="text-primary font-bold text-lg">S/ ${product.price.toFixed(2)}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.className = btn.innerText.includes(cat) || (cat === 'all' && btn.innerText === 'Todos') 
+                    ? "category-btn active px-5 py-2 bg-primary text-white rounded-full text-sm font-bold shadow-md whitespace-nowrap transition-all"
+                    : "category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap";
+            });
+            renderProducts(cat, document.getElementById('searchInput').value);
+        }
+
+        function filterProducts() {
+            renderProducts(currentFilter, document.getElementById('searchInput').value);
+        }
+
+        // --- CARRITO Y LÓGICA DE COMPRA ---
+        function addToCart(id) {
+            const product = productsDB.find(p => p.id === id);
+            const existing = cart.find(item => item.id === id);
+            if (existing) existing.qty++;
+            else cart.push({ ...product, qty: 1 });
+            updateCartUI();
+            showToast(`Agregado: ${product.name}`);
+            updateCartUI();
+        }
+
+        function updateQty(id, change) {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += change;
+                if (item.qty <= 0) removeFromCart(id);
+                else updateCartUI();
+            }
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+        }
+
+        function clearCart() {
+            if(confirm('¿Vaciar carrito?')) { cart = []; currentDiscount = 0; updateCartUI(); }
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+            let subtotal = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60"><i class="fas fa-shopping-basket text-6xl mb-4"></i><p>El carrito está vacío</p></div>`;
+                document.getElementById('checkout-btn').classList.add('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('checkout-btn').disabled = true;
+            } else {
+                document.getElementById('checkout-btn').classList.remove('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('checkout-btn').classList.add('bg-primary', 'hover:bg-secondary');
+                document.getElementById('checkout-btn').disabled = false;
+
+                cart.forEach(item => {
+                    subtotal += item.price * item.qty;
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between group p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-primary transition";
+                    // Estructura similar a la imagen: Nombre, controles de cantidad, precio, eliminar
+                    div.innerHTML = `
+                        <div class="flex flex-col w-full">
+                            <div class="flex justify-between mb-2">
+                                <span class="font-bold text-gray-800 text-sm truncate w-32">${item.name}</span>
+                                <span class="font-bold text-gray-800">S/ ${(item.price * item.qty).toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center border border-gray-200 rounded-lg bg-gray-50">
+                                    <button onclick="updateQty(${item.id}, -1)" class="px-3 py-1 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-l-lg">-</button>
+                                    <span class="px-2 text-sm font-bold text-gray-800 w-8 text-center bg-white border-x border-gray-200">${item.qty}</span>
+                                    <button onclick="updateQty(${item.id}, 1)" class="px-3 py-1 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-r-lg">+</button>
+                                </div>
+                                <button onclick="removeFromCart(${item.id})" class="text-red-400 hover:text-red-600 p-1"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            // Cálculos con Descuento
+            const discountAmount = subtotal * (currentDiscount / 100);
+            const total = subtotal - discountAmount;
+            const baseImponible = total / 1.18;
+            const igv = total - baseImponible;
+
+            document.getElementById('summary-subtotal').innerText = `S/ ${subtotal.toFixed(2)}`;
+            document.getElementById('discount-row').classList.toggle('hidden', currentDiscount === 0);
+            document.getElementById('summary-discount').innerText = `- S/ ${discountAmount.toFixed(2)}`;
+            document.getElementById('summary-tax').innerText = `S/ ${igv.toFixed(2)}`;
+            document.getElementById('summary-total').innerText = `S/ ${total.toFixed(2)}`;
+        }
+
+        // --- MODALES Y ACCIONES ---
+        function openCustomerModal() { document.getElementById('customerModal').classList.remove('hidden'); }
+        function openDiscountModal() { document.getElementById('discountModal').classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function setCustomer(name) {
+            document.getElementById('client-name').innerText = name;
+            document.getElementById('client-avatar').innerHTML = name === 'Público General' ? '<i class="fas fa-user"></i>' : `<img src="https://ui-avatars.com/api/?name=${name}&background=random" class="w-full h-full rounded-full">`;
+            closeModal('customerModal');
+        }
+
+        function applyDiscount(percent) {
+            currentDiscount = percent;
+            updateCartUI();
+            closeModal('discountModal');
+        }
+
+        function selectPayment(method) {
+            paymentMethod = method;
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.classList.remove('border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+                btn.classList.add('border', 'border-gray-200', 'text-gray-600');
+            });
+            
+            const selectedBtn = document.getElementById(`pay-${method}`);
+            selectedBtn.classList.remove('border', 'border-gray-200', 'text-gray-600');
+            selectedBtn.classList.add('border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+        }
+
+        function holdSale() {
+            if (cart.length === 0) return alert("No hay productos para pausar.");
+            alert("Venta pausada y guardada en 'Ventas Pendientes'.");
+            cart = []; currentDiscount = 0; updateCartUI();
+        }
+
+        function processCheckout() {
+            const btn = document.getElementById('checkout-btn');
+            const original = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando...`;
+            setTimeout(() => {
+                document.getElementById('success-modal').classList.remove('hidden');
+                document.getElementById('modal-content').classList.remove('scale-90', 'opacity-0');
+                document.getElementById('modal-content').classList.add('scale-100', 'opacity-100');
+                document.getElementById('modal-total').innerText = document.getElementById('summary-total').innerText;
+                document.getElementById('modal-method').innerText = paymentMethod;
+                btn.innerHTML = original;
+                btn.disabled = false;
+            }, 1500);
+        }
+
+        function resetPOS() {
+            document.getElementById('success-modal').classList.add('hidden');
+            cart = []; currentDiscount = 0; updateCartUI();
+            setCustomer('Público General');
+        }
+
+        function logout() {
+            if(confirm('¿Cerrar caja?')) { localStorage.removeItem('stockflow_session'); window.location.href = 'Login.html'; }
+        }
+
+        // --- UTILIDADES ---
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center gap-2 animate-bounce-short';
+            toast.innerHTML = `<i class="fas fa-check-circle text-green-400"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+    </script>
+</body>
+</html>

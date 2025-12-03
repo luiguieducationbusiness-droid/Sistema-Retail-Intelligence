@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Punto de Venta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        bgLight: '#F3F4F6',
+                        danger: '#EF4444',
+                        success: '#10B981'
+                    },
+                    animation: {
+                        'bounce-short': 'bounceShort 0.3s ease-in-out 1'
+                    },
+                    keyframes: {
+                        bounceShort: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Efecto al hacer click en producto */
+        .product-card:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex text-gray-800">
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2"></div>
+
+    <!-- SIDEBAR NAVEGACIÓN (Izquierda) -->
+    <aside class="w-20 bg-white border-r border-gray-200 flex flex-col items-center py-6 z-20 shadow-lg">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold mb-8 shadow-md">S</div>
+        
+        <nav class="flex-1 space-y-4 w-full flex flex-col items-center">
+            <a href="Dashboard.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Dashboard">
+                <i class="fas fa-chart-pie text-xl"></i>
+            </a>
+            <a href="POS.html" class="text-primary bg-blue-50 p-3 rounded-xl transition shadow-inner relative group" title="POS">
+                <i class="fas fa-cash-register text-xl"></i>
+                <span class="absolute right-2 top-2 w-2 h-2 bg-success rounded-full ring-2 ring-white animate-pulse"></span>
+            </a>
+            <a href="Inventario.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Inventario">
+                <i class="fas fa-boxes text-xl"></i>
+            </a>
+            <a href="Clientes.html" class="text-gray-400 hover:text-primary hover:bg-indigo-50 p-3 rounded-xl transition-all" title="Clientes">
+                <i class="fas fa-users text-xl"></i>
+            </a>
+        </nav>
+
+        <button onclick="logout()" class="text-gray-400 hover:text-danger mt-auto p-3 rounded-xl hover:bg-red-50 transition">
+            <i class="fas fa-power-off text-xl"></i>
+        </button>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL (Centro) -->
+    <main class="flex-1 flex flex-col h-full min-w-0 bg-bgLight">
+        
+        <!-- Header / Buscador -->
+        <header class="bg-white p-4 border-b border-gray-200 shadow-sm z-10">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                <div class="relative flex-1 w-full md:max-w-xl">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="searchInput" onkeyup="filterProducts()" 
+                        placeholder="Escanear código o buscar producto..." 
+                        class="w-full pl-11 pr-24 py-3 bg-gray-100 border-transparent focus:bg-white border-2 focus:border-primary rounded-xl focus:outline-none transition-all font-medium" autofocus>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 bg-white border border-gray-200 px-2 py-1 rounded text-xs text-gray-500 font-mono shadow-sm hidden sm:block">
+                        F1 SCAN
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto justify-end">
+                    <div class="hidden md:flex flex-col text-right">
+                        <span class="text-xs text-gray-400">Cajero</span>
+                        <span class="text-sm font-bold text-gray-800" id="cashier-name">Admin</span>
+                    </div>
+                    <div class="h-8 w-px bg-gray-200 hidden md:block"></div>
+                    <span class="text-sm font-bold text-success flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                        <i class="fas fa-wifi text-xs"></i> Online
+                    </span>
+                </div>
+            </div>
+
+            <!-- Categorías -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="category-container">
+                <button onclick="filterCategory('all')" class="category-btn active px-5 py-2 bg-primary text-white rounded-full text-sm font-bold shadow-md whitespace-nowrap transition-all">
+                    Todos
+                </button>
+                <button onclick="filterCategory('Bebidas')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">
+                    Bebidas
+                </button>
+                <button onclick="filterCategory('Snacks')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">
+                    Snacks
+                </button>
+                <button onclick="filterCategory('Lácteos')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">
+                    Lácteos
+                </button>
+                <button onclick="filterCategory('Ropa')" class="category-btn px-5 py-2 bg-white border border-gray-200 hover:border-primary hover:text-primary text-gray-600 rounded-full text-sm font-medium transition whitespace-nowrap">
+                    Ropa
+                </button>
+            </div>
+        </header>
+
+        <!-- Grid de Productos -->
+        <div class="flex-1 overflow-y-auto p-6" id="products-grid">
+            <!-- SE LLENA CON JS -->
+        </div>
+    </main>
+
+    <!-- SIDEBAR CARRITO (Derecha) -->
+    <aside class="w-96 bg-white border-l border-gray-200 flex flex-col shadow-2xl z-30 relative h-full">
+        
+        <!-- Header Carrito -->
+        <div class="p-5 border-b border-gray-100 bg-gray-50">
+            <div class="flex justify-between items-start mb-2">
+                <h2 class="font-bold text-lg text-gray-800">Ticket Actual #0045</h2>
+                <button onclick="clearCart()" class="text-gray-400 hover:text-danger p-2 rounded-full hover:bg-red-50 transition" title="Limpiar Carrito">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+            
+            <div class="relative group cursor-pointer">
+                <div class="flex items-center gap-2 bg-white border border-gray-200 p-2 rounded-lg hover:border-primary transition">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 text-primary flex items-center justify-center">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-gray-500">Cliente</p>
+                        <p class="text-sm font-bold text-gray-800">Público General</p>
+                    </div>
+                    <i class="fas fa-chevron-down text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Items (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cart-items">
+            <!-- ESTADO VACÍO -->
+            <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                <i class="fas fa-shopping-basket text-6xl mb-4"></i>
+                <p>El carrito está vacío</p>
+                <p class="text-xs">Selecciona productos para comenzar</p>
+            </div>
+        </div>
+
+        <!-- Footer Total y Pago -->
+        <div class="bg-white border-t border-gray-200 p-5 shadow-[0_-4px_15px_-3px_rgba(0,0,0,0.1)]">
+            <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-gray-500 text-sm">
+                    <span>Subtotal</span>
+                    <span id="summary-subtotal">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between text-gray-500 text-sm">
+                    <span>IGV (18%)</span>
+                    <span id="summary-tax">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t border-dashed border-gray-200 mt-2">
+                    <span class="font-bold text-xl text-gray-800">Total</span>
+                    <span class="font-bold text-3xl text-primary" id="summary-total">S/ 0.00</span>
+                </div>
+            </div>
+
+            <!-- Métodos de Pago -->
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <button onclick="selectPayment('efectivo')" id="pay-efectivo" class="payment-btn border-2 border-primary bg-blue-50 text-primary rounded-xl py-2 text-sm font-bold transition flex flex-col items-center gap-1">
+                    <i class="fas fa-money-bill"></i> Efectivo
+                </button>
+                <button onclick="selectPayment('tarjeta')" id="pay-tarjeta" class="payment-btn border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-600 hover:border-primary hover:text-primary transition flex flex-col items-center gap-1">
+                    <i class="fas fa-credit-card"></i> Tarjeta
+                </button>
+                <button onclick="selectPayment('yape')" id="pay-yape" class="payment-btn border border-gray-200 rounded-xl py-2 text-sm font-medium text-gray-600 hover:border-purple-500 hover:text-purple-600 transition flex flex-col items-center gap-1">
+                    <i class="fas fa-qrcode"></i> QR
+                </button>
+            </div>
+
+            <button onclick="processCheckout()" id="checkout-btn" class="w-full bg-gray-400 cursor-not-allowed text-white font-bold py-4 rounded-xl shadow-lg transition transform active:scale-95 flex justify-between px-6 items-center" disabled>
+                <span class="text-lg">COBRAR</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MODAL DE ÉXITO (Pago Completado) -->
+    <div id="success-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center transform scale-90 opacity-0 transition-all duration-300" id="modal-content">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-check text-4xl text-success"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">¡Venta Exitosa!</h2>
+            <p class="text-gray-500 mb-6">El ticket #0045 se ha generado correctamente.</p>
+            
+            <div class="bg-gray-50 p-4 rounded-xl mb-6 text-left border border-gray-100">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-500 text-sm">Total Pagado:</span>
+                    <span class="font-bold text-gray-800" id="modal-total">S/ 0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500 text-sm">Método:</span>
+                    <span class="font-bold text-primary uppercase" id="modal-method">Efectivo</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeModal()" class="w-full bg-primary hover:bg-secondary text-white font-bold py-2 rounded-xl transition">
+                    Nueva Venta
+                </button>
+                <button class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-2 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        // --- 1. DATOS Y ESTADO ---
+        const productsDB = [
+            { id: 1, name: "Coca Cola 600ml", price: 3.50, category: "Bebidas", icon: "fa-wine-bottle", color: "text-red-500" },
+            { id: 2, name: "Inca Kola 600ml", price: 3.50, category: "Bebidas", icon: "fa-wine-bottle", color: "text-yellow-500" },
+            { id: 3, name: "Agua San Mateo", price: 2.00, category: "Bebidas", icon: "fa-tint", color: "text-blue-400" },
+            { id: 4, name: "Galletas Oreo", price: 2.00, category: "Snacks", icon: "fa-cookie-bite", color: "text-gray-800" },
+            { id: 5, name: "Papas Lays", price: 4.50, category: "Snacks", icon: "fa-cookie", color: "text-yellow-600" },
+            { id: 6, name: "Yogurt Gloria", price: 5.20, category: "Lácteos", icon: "fa-wine-glass", color: "text-pink-500" },
+            { id: 7, name: "Leche Gloria Tarro", price: 4.00, category: "Lácteos", icon: "fa-glass-whiskey", color: "text-blue-700" },
+            { id: 8, name: "Gorra Nike (Promo)", price: 48.00, oldPrice: 60.00, category: "Ropa", icon: "fa-tshirt", color: "text-gray-700", promo: true },
+            { id: 9, name: "Pan Bimbo Blanco", price: 8.90, category: "Snacks", icon: "fa-bread-slice", color: "text-yellow-600" },
+        ];
+
+        let cart = [];
+        let currentFilter = 'all';
+        let paymentMethod = 'efectivo';
+
+        // --- 2. INICIALIZACIÓN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            renderProducts();
+            updateCartUI();
+            
+            // Focus global para escanear
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    document.getElementById('searchInput').focus();
+                }
+            });
+        });
+
+        function checkAuth() {
+            const session = localStorage.getItem('stockflow_session');
+            if (!session) window.location.href = 'Login.html';
+            else {
+                const user = JSON.parse(session);
+                document.getElementById('cashier-name').innerText = user.email.split('@')[0];
+            }
+        }
+
+        // --- 3. RENDERIZADO DE PRODUCTOS ---
+        function renderProducts(filter = 'all', searchQuery = '') {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+            grid.className = "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"; // Restaurar grid
+
+            let filtered = productsDB;
+
+            // Filtro por categoría
+            if (filter !== 'all') {
+                filtered = filtered.filter(p => p.category === filter);
+            }
+
+            // Filtro por búsqueda
+            if (searchQuery) {
+                filtered = filtered.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+            }
+
+            if (filtered.length === 0) {
+                grid.className = "flex flex-col items-center justify-center h-full text-gray-400";
+                grid.innerHTML = `<i class="fas fa-search text-4xl mb-2"></i><p>No se encontraron productos</p>`;
+                return;
+            }
+
+            filtered.forEach(product => {
+                const hasPromo = product.promo ? true : false;
+                const card = document.createElement('div');
+                card.className = `product-card bg-white p-3 rounded-xl shadow-sm hover:shadow-md cursor-pointer border-2 border-transparent hover:border-primary transition group relative overflow-hidden select-none`;
+                card.onclick = () => addToCart(product.id);
+
+                card.innerHTML = `
+                    ${hasPromo ? '<div class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10">OFERTA</div>' : ''}
+                    <div class="h-28 bg-gray-50 rounded-lg mb-3 flex items-center justify-center transition-colors group-hover:bg-blue-50">
+                        <i class="fas ${product.icon} text-4xl ${product.color} group-hover:scale-110 transition duration-300"></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-sm leading-tight mb-1 h-10 overflow-hidden">${product.name}</h3>
+                    <div class="flex items-center gap-2">
+                        ${hasPromo ? `<p class="text-gray-400 line-through text-xs">S/ ${product.oldPrice.toFixed(2)}</p>` : ''}
+                        <p class="text-primary font-bold text-lg">S/ ${product.price.toFixed(2)}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            
+            // Actualizar botones UI
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white', 'shadow-md');
+                btn.classList.add('bg-white', 'text-gray-600', 'border-gray-200');
+                if (btn.innerText.includes(cat) || (cat === 'all' && btn.innerText === 'Todos')) {
+                    btn.classList.add('bg-primary', 'text-white', 'shadow-md');
+                    btn.classList.remove('bg-white', 'text-gray-600');
+                }
+            });
+
+            renderProducts(currentFilter, document.getElementById('searchInput').value);
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value;
+            renderProducts(currentFilter, query);
+        }
+
+        // --- 4. LÓGICA DEL CARRITO ---
+        function addToCart(id) {
+            const product = productsDB.find(p => p.id === id);
+            const existingItem = cart.find(item => item.id === id);
+
+            if (existingItem) {
+                existingItem.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            showToast(`Agregado: ${product.name}`);
+            updateCartUI();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(item => item.id !== id);
+            updateCartUI();
+        }
+
+        function clearCart() {
+            if(confirm('¿Vaciar carrito?')) {
+                cart = [];
+                updateCartUI();
+            }
+        }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            container.innerHTML = '';
+
+            let subtotal = 0;
+
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-60">
+                        <i class="fas fa-shopping-basket text-6xl mb-4"></i>
+                        <p>El carrito está vacío</p>
+                    </div>`;
+                document.getElementById('checkout-btn').classList.add('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('checkout-btn').classList.remove('bg-primary', 'hover:bg-secondary');
+                document.getElementById('checkout-btn').disabled = true;
+            } else {
+                document.getElementById('checkout-btn').classList.remove('bg-gray-400', 'cursor-not-allowed');
+                document.getElementById('checkout-btn').classList.add('bg-primary', 'hover:bg-secondary');
+                document.getElementById('checkout-btn').disabled = false;
+
+                cart.forEach(item => {
+                    const itemTotal = item.price * item.qty;
+                    subtotal += itemTotal;
+
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between group p-2 hover:bg-gray-50 rounded-lg transition";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white border border-gray-200 rounded flex items-center justify-center text-gray-500">
+                                <span class="font-bold text-xs">x${item.qty}</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm text-gray-800 line-clamp-1 w-32">${item.name}</p>
+                                <p class="text-xs text-gray-500">S/ ${item.price.toFixed(2)} c/u</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-gray-800">S/ ${itemTotal.toFixed(2)}</span>
+                            <button onclick="removeFromCart(${item.id})" class="text-gray-300 hover:text-danger transition p-1">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            // Cálculos Financieros
+            const tax = subtotal * 0.18;
+            const total = subtotal; // En Perú normalmente el precio lista ya incluye IGV, pero para el ejemplo:
+            // Vamos a asumir que el precio lista es final (inc IGV)
+            const baseImponible = total / 1.18;
+            const igvCalculado = total - baseImponible;
+
+            document.getElementById('summary-subtotal').innerText = `S/ ${baseImponible.toFixed(2)}`;
+            document.getElementById('summary-tax').innerText = `S/ ${igvCalculado.toFixed(2)}`;
+            document.getElementById('summary-total').innerText = `S/ ${total.toFixed(2)}`;
+            
+            // Auto scroll al final del carrito
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // --- 5. PAGO Y CHECKOUT ---
+        function selectPayment(method) {
+            paymentMethod = method;
+            document.querySelectorAll('.payment-btn').forEach(btn => {
+                btn.classList.remove('border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+                btn.classList.add('border', 'border-gray-200', 'text-gray-600');
+            });
+            
+            const selectedBtn = document.getElementById(`pay-${method}`);
+            selectedBtn.classList.remove('border', 'border-gray-200', 'text-gray-600');
+            selectedBtn.classList.add('border-2', 'border-primary', 'bg-blue-50', 'text-primary');
+        }
+
+        function processCheckout() {
+            if (cart.length === 0) return;
+
+            const btn = document.getElementById('checkout-btn');
+            const originalText = btn.innerHTML;
+            
+            // Estado de carga
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Procesando...`;
+
+            setTimeout(() => {
+                // Mostrar Modal
+                const modal = document.getElementById('success-modal');
+                const content = document.getElementById('modal-content');
+                
+                // Setear datos del modal
+                document.getElementById('modal-total').innerText = document.getElementById('summary-total').innerText;
+                document.getElementById('modal-method').innerText = paymentMethod;
+
+                modal.classList.remove('hidden');
+                // Pequeño delay para animación CSS
+                setTimeout(() => {
+                    content.classList.remove('scale-90', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+
+                // Resetear botón
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 1500);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('success-modal');
+            const content = document.getElementById('modal-content');
+            
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-90', 'opacity-0');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                cart = []; // Limpiar carrito
+                updateCartUI();
+            }, 300);
+        }
+
+        function logout() {
+            if(confirm('¿Cerrar caja y salir?')) {
+                localStorage.removeItem('stockflow_session');
+                window.location.href = 'Login.html';
+            }
+        }
+
+        // --- UTILIDADES ---
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg text-sm flex items-center gap-2 animate-bounce-short';
+            toast.innerHTML = `<i class="fas fa-check-circle text-green-400"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+    </script>
+</body>
+</html>

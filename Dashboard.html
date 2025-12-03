@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockFlow | Panel de Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#1e40af',
+                        bgLight: '#F3F4F6',
+                        danger: '#EF4444',
+                        success: '#10B981'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Transiciones suaves para el menú móvil */
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        .hidden-mobile { transform: translateX(-100%); }
+        .show-mobile { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-bgLight text-gray-800 flex h-screen overflow-hidden">
+
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden lg:hidden glass"></div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col h-full shadow-2xl lg:shadow-none lg:static">
+        
+        <div class="p-6 flex items-center gap-3 border-b border-gray-100 h-20">
+            <div class="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-200">S</div>
+            <h1 class="text-xl font-bold text-gray-800 tracking-tight">StockFlow</h1>
+            <button class="lg:hidden ml-auto text-gray-500" onclick="toggleSidebar()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <a href="Dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-blue-50 text-primary rounded-xl font-medium border border-blue-100 transition-all">
+                <i class="fas fa-chart-pie w-5"></i> Dashboard
+            </a>
+            <a href="POS.html" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-all group">
+                <i class="fas fa-cash-register w-5 group-hover:text-primary transition-colors"></i> Punto de Venta
+            </a>
+            <a href="Inventario.html" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-all group">
+                <i class="fas fa-boxes w-5 group-hover:text-primary transition-colors"></i> Inventario
+            </a>
+            <a href="Clientes.html" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl transition-all group">
+                <i class="fas fa-users w-5 group-hover:text-primary transition-colors"></i> Clientes
+            </a>
+            <a href="Marketing.html" class="flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition-all group">
+                <i class="fas fa-bullhorn w-5 group-hover:text-purple-600 transition-colors"></i> Marketing 
+                <span class="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full ml-auto font-bold">BETA</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-100">
+            <button onclick="logout()" class="flex w-full items-center gap-3 px-4 py-2 text-gray-500 hover:text-danger hover:bg-red-50 rounded-lg transition-all text-sm font-medium">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-bgLight w-full">
+        
+        <header class="bg-white/80 backdrop-blur-md border-b border-gray-200 p-4 h-20 flex justify-between items-center sticky top-0 z-10 w-full">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                
+                <div class="relative hidden sm:block">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" placeholder="Buscar SKU, venta o cliente..." 
+                        class="pl-10 pr-4 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-primary border-2 rounded-xl text-sm focus:outline-none focus:ring-0 w-64 transition-all duration-300">
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-blue-50 rounded-full transition-all">
+                    <i class="fas fa-bell text-xl"></i>
+                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white"></span>
+                </button>
+                <div class="h-8 w-px bg-gray-200 mx-1"></div>
+                <div class="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1.5 rounded-xl transition">
+                    <div class="text-right hidden md:block">
+                        <p id="user-name" class="text-sm font-bold text-gray-800">Cargando...</p>
+                        <p id="user-role" class="text-xs text-gray-500 uppercase tracking-wide">admin</p>
+                    </div>
+                    <a href="Perfil.html" aria-label="Ir a mi perfil" class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shadow-md border-2 border-white" id="user-avatar">
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 animate-fade-in scroll-smooth">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Resumen General</h2>
+                    <p id="current-date" class="text-gray-500 text-sm mt-1 flex items-center gap-2">
+                        <i class="far fa-calendar-alt"></i> <span>Cargando fecha...</span>
+                    </p>
+                </div>
+                <button onclick="downloadReport()" class="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 hover:text-primary hover:border-blue-200 shadow-sm transition-all flex items-center gap-2 group">
+                    <i class="fas fa-download text-gray-400 group-hover:text-primary transition-colors"></i> 
+                    Descargar Reporte
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Ventas de Hoy</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-1 tracking-tight" id="kpi-sales">S/ 0.00</h3>
+                        </div>
+                        <div class="p-3 bg-green-50 text-green-600 rounded-xl">
+                            <i class="fas fa-dollar-sign text-xl"></i>
+                        </div>
+                    </div>
+                    <span class="text-green-600 text-sm font-bold flex items-center bg-green-50 w-fit px-2 py-1 rounded-md">
+                        <i class="fas fa-arrow-up mr-1"></i> 15% 
+                    </span>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Ganancia Neta</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-1 tracking-tight" id="kpi-profit">S/ 0.00</h3>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-primary rounded-xl">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                    </div>
+                    <span class="text-primary text-sm font-bold flex items-center bg-blue-50 w-fit px-2 py-1 rounded-md">
+                        Margen del 36%
+                    </span>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-red-100 ring-1 ring-red-50 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Stock Crítico</p>
+                            <h3 class="text-3xl font-bold text-danger mt-1 tracking-tight">5</h3>
+                            <p class="text-xs text-gray-400 font-medium">Productos por agotarse</p>
+                        </div>
+                        <div class="p-3 bg-red-50 text-danger rounded-xl animate-pulse">
+                            <i class="fas fa-exclamation-triangle text-xl"></i>
+                        </div>
+                    </div>
+                    <button class="text-danger text-sm font-bold hover:underline flex items-center gap-1">
+                        Ver lista de reorden <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-gray-800 text-lg">Actividad de Ventas (Hora)</h4>
+                        <select class="bg-gray-50 border-none text-xs text-gray-500 rounded-lg p-2 font-medium cursor-pointer hover:bg-gray-100">
+                            <option>Hoy</option>
+                            <option>Ayer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="h-48 flex items-end justify-between gap-3 px-2" id="bars-chart">
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[30%]" data-value="S/ 80.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 80.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[50%]" data-value="S/ 120.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 120.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[40%]" data-value="S/ 95.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 95.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[75%]" data-value="S/ 340.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 340.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-primary rounded-t-lg shadow-lg shadow-blue-200 relative group h-[90%]" data-value="S/ 450.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 450.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[60%]" data-value="S/ 210.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 210.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[45%]" data-value="S/ 150.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 150.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                        <div class="w-full bg-indigo-50 rounded-t-lg hover:bg-primary transition-all duration-300 relative group h-[80%]" data-value="S/ 380.00">
+                            <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-all pointer-events-none chart-tooltip whitespace-nowrap">
+                                S/ 380.00
+                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-4 font-medium uppercase tracking-wide">
+                        <span>8:00 AM</span>
+                        <span>1:00 PM</span>
+                        <span>8:00 PM</span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden flex flex-col justify-center">
+                    <div class="absolute top-0 right-0 -mr-8 -mt-8 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm border border-white/10 shadow-sm flex items-center gap-1">
+                                <i class="fas fa-sparkles text-yellow-300"></i> StockFlow AI
+                            </span>
+                        </div>
+                        <h4 class="text-xl font-bold mb-2">Oportunidad Detectada</h4>
+                        <p class="text-indigo-100 text-sm mb-6 leading-relaxed">
+                            El producto <strong class="text-white border-b border-white/30">"Gorra Nike Negra"</strong> tiene 50 unidades estancadas hace 30 días.
+                        </p>
+                        
+                        <div class="flex flex-col gap-3">
+                            <button class="w-full bg-white text-indigo-700 px-4 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition shadow-lg flex items-center justify-center gap-2">
+                                <i class="fas fa-tag"></i> Crear Oferta 20% OFF
+                            </button>
+                            <button class="w-full px-4 py-2 text-white/70 hover:text-white text-sm font-medium transition">
+                                Ignorar sugerencia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
+
+            <footer class="text-center text-gray-400 text-xs mt-12 pb-4">
+                &copy; 2025 StockFlow System. Versión 11.2 PRO
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        // 1. AUTH GUARD (SEGURIDAD)
+        // Verificamos si existe la sesión creada en Login.html
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessionData = localStorage.getItem('stockflow_session');
+            
+            if (!sessionData) {
+                // Si no hay sesión, volver al login
+                window.location.href = 'Login.html';
+            } else {
+                // Si hay sesión, cargar datos del usuario
+                const user = JSON.parse(sessionData);
+                initializeDashboard(user);
+            }
+        });
+
+        // 2. INICIALIZACIÓN DE DATOS
+        function initializeDashboard(user) {
+            // Cargar Info Usuario
+            const emailName = user.email.split('@')[0]; // Obtener nombre del correo
+            // Capitalizar primera letra
+            const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+            
+            document.getElementById('user-name').innerText = displayName;
+            document.getElementById('user-role').innerText = user.role === 'admin' ? 'Gerente General' : 'Vendedor';
+            document.getElementById('user-avatar').innerText = displayName.charAt(0);
+
+            // Cargar Fecha Actual
+            updateDate();
+            
+            // Simular carga de datos numéricos
+            animateValue("kpi-sales", 0, 1250.50, 1500);
+            animateValue("kpi-profit", 0, 450.00, 1500);
+        }
+
+        // 3. UTILIDADES Y UI
+
+        // Función para la fecha
+        function updateDate() {
+            const dateElement = document.getElementById('current-date');
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            // Formato: "martes, 21 de noviembre de 2025"
+            const dateString = now.toLocaleDateString('es-PE', options);
+            // Capitalizar la primera letra
+            dateElement.innerHTML = `<i class="far fa-calendar-alt"></i> ${dateString.charAt(0).toUpperCase() + dateString.slice(1)}`;
+        }
+
+        // Función para Menú Móvil
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            
+            // Toggle clases de Tailwind para mover el sidebar
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Función Logout
+        function logout() {
+            if(confirm('¿Estás seguro de cerrar sesión?')) {
+                localStorage.removeItem('stockflow_session');
+                window.location.href = 'Login.html';
+            }
+        }
+
+        // Función Reporte (Simulación)
+        function downloadReport() {
+            showToast("Generando PDF...", "info");
+            setTimeout(() => {
+                showToast("Reporte descargado con éxito", "success");
+            }, 2000);
+        }
+
+        // Sistema de Notificaciones (Mismo que Login)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = type === 'success' ? 'bg-green-500' : (type === 'info' ? 'bg-blue-500' : 'bg-red-500');
+            let iconClass = type === 'success' ? 'fa-check-circle' : (type === 'info' ? 'fa-info-circle' : 'fa-exclamation-circle');
+
+            toast.className = `${bgClass} text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 transform transition-all duration-300 translate-x-full mb-2 z-50`;
+            toast.innerHTML = `<i class="fas ${iconClass} text-lg"></i><span class="font-medium text-sm">${message}</span>`;
+
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Animación de números (Efecto contador)
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                // Calcular valor actual
+                const value = progress * (end - start) + start;
+                // Formatear a moneda (S/ )
+                obj.innerHTML = `S/ ${value.toFixed(2)}`;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // --- Nuevo: inicializar tooltips en las barras ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('#bars-chart > div[data-value]');
+            bars.forEach(bar => {
+                const tip = bar.querySelector('.chart-tooltip');
+                // escribir valor desde el atributo (por si quieres actualizar dinámicamente)
+                if (tip) tip.firstChild && tip.firstChild.nodeValue && (tip.firstChild.nodeValue = bar.dataset.value);
+                // mover tooltip con el mouse para evitar recortes en los bordes
+                bar.addEventListener('mousemove', (e) => {
+                    const rect = bar.getBoundingClientRect();
+                    const tooltip = bar.querySelector('.chart-tooltip');
+                    if (!tooltip) return;
+                    // posición relativa dentro de la barra (0..100%)
+                    const x = Math.max(8, Math.min(rect.width - 8, e.clientX - rect.left));
+                    tooltip.style.left = `${x}px`;
+                    tooltip.style.transform = 'translateX(-50%)';
+                });
+                // en touch show value con tap (opcional)
+                bar.addEventListener('touchstart', (e) => {
+                    const tooltip = bar.querySelector('.chart-tooltip');
+                    if (!tooltip) return;
+                    tooltip.classList.add('opacity-100');
+                    setTimeout(()=> tooltip.classList.remove('opacity-100'), 1500);
+                }, {passive:true});
+            });
+        });
+    </script>
+</body>
+</html>
